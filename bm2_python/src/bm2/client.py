@@ -177,12 +177,27 @@ class BM2Client:
                 if "was not found" in e.args[0]:
                     logger.info(f"Performing forceful device disconnection : {self._mac}")
                     subprocess.run("bluetoothctl", input=f"disconnect {self._mac}".encode("ascii"), stdout=subprocess.DEVNULL)
+                elif "org.bluez.Error.InProgress" in e.args[0]:
+                    logger.info(f"Performing forceful device disconnection because already in progress : {self._mac}")
+                    subprocess.run("bluetoothctl", input=f"disconnect {self._mac}".encode("ascii"), stdout=subprocess.DEVNULL)
                 elif "org.freedesktop.DBus.Error.NoReply" in e.args[0]:
                     pass
+                elif "failed to discover services, device disconnected" in e.args[0]:
+                    raise Exception("failed to discover services, device disconnected")
+                elif "No powered Bluetooth adapters found." in e.args[0]:
+                    raise Exception("No powered Bluetooth adapters found.")
                 else:
-                    logger.error(e)
+                    logger.error(f"mainloop BleakError exception error {e} : {self._mac}")
+                    logger.error(f"{e.args[0]}")
+            except TimeoutError as e:
+                logger.error(f"mainloop Timeout error {e} : {self._mac}")
+                #try forcing a disconnect
+                subprocess.run("bluetoothctl", input=f"disconnect {self._mac}".encode("ascii"), stdout=subprocess.DEVNULL)
             except OSError as e:
-                logger.error(e)
+                logger.error(f"mainloop OS error {e} : {self._mac}")
+            except Exception as e:
+                logger.error(f"mainloop exception error {e} : {self._mac}")
+                logger.error(f"{e.args[0]}")
             finally:
                 self._client = None
                 self._fulfill_history_reading_future(exception=NotConnectedError())
