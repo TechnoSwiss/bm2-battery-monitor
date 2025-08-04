@@ -81,19 +81,31 @@ class BM2Client:
             if self._stop:
                 raise NotConnectedError()
 
-            f = asyncio.Future[List[HistoryReading]]()
-            self._future_history_readings = f
-            await self._send([0xe7, 1])
-            return await asyncio.wait_for(f, 60)
+            try:
+                f = asyncio.Future[List[HistoryReading]]()
+                self._future_history_readings = f
+                await self._send([0xe7, 1])
+                return await asyncio.wait_for(f, 60)
+            except TimeoutError:
+                logger.error(f"get_history Timeout error : {self._mac}")
+                return []
+            except Exception as e:
+                logger.error(f"get_history Exception: {e} : {self._mac}")
+                return []
 
     async def get_voltage(self) -> float:
         async with self._request_sem:
             if self._stop:
                 raise NotConnectedError()
 
-            f = asyncio.Future[float]()
-            self._future_voltage_reading = f
-            return await asyncio.wait_for(f, 60)
+            try:
+                f = asyncio.Future[float]()
+                self._future_voltage_reading = f
+                return await asyncio.wait_for(f, 60)
+            except TimeoutError:
+                logger.error(f"get_voltage Timeout error : {self._mac}")
+            except Exception as e:
+                logger.error(f"get_history Exception: {e} : {self._mac}")
 
     async def _send(self, data: List[int]) -> None:
         await self.wait_for_connected()
