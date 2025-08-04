@@ -1,6 +1,6 @@
 from typing import Any, cast, Union
 
-from Crypto.Cipher import AES
+from Cryptodome.Cipher import AES
 
 BM2_ENCRYPTION_KEY = b"\x6c\x65\x61\x67\x65\x6e\x64\xff\xfe\x31\x38\x38\x32\x34\x36\x36"
 
@@ -22,3 +22,7 @@ def encrypt(data: bytes) -> bytes:
 
 def decrypt(encrypted_data: Union[bytes, bytearray]) -> bytes:
     return cast(bytes, create_aes().decrypt(bytes(encrypted_data)))
+
+def decrypt_all_blocks(data: bytes) -> bytes:
+    assert len(data) % 16 == 0, "Encrypted data must be a multiple of 16 bytes"
+    return b''.join(decrypt(data[i:i+16]) for i in range(0, len(data), 16))

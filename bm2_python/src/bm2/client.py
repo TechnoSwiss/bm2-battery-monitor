@@ -13,7 +13,7 @@ from bleak import BleakClient
 import bleak.exc
 
 from bm2.bit_utils import decode_3bytes, decode_nibbles
-from bm2.encryption import encrypt, decrypt
+from bm2.encryption import encrypt, decrypt, decrypt_all_blocks
 
 logger = logging.getLogger("bm2_client")
 
@@ -137,7 +137,7 @@ class BM2Client:
                 await asyncio.sleep(1)
 
     def _notification_handler(self, _: Any, encrypted_data: bytearray) -> None:
-        decrypted_data = decrypt(encrypted_data)
+        decrypted_data = decrypt_all_blocks(encrypted_data)
 
         def is_of_type(packet_type: PacketType) -> bool:
             return decrypted_data[0:len(packet_type.value)] == packet_type.value
