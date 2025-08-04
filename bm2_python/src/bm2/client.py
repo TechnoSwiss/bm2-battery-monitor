@@ -84,7 +84,7 @@ class BM2Client:
             f = asyncio.Future[List[HistoryReading]]()
             self._future_history_readings = f
             await self._send([0xe7, 1])
-            return await asyncio.wait_for(f, 5)
+            return await asyncio.wait_for(f, 60)
 
     async def get_voltage(self) -> float:
         async with self._request_sem:
