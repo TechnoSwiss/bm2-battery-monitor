@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import timedelta, datetime
 from typing import List, Optional, Any
 
-from bleak import BleakClient
+from bleak import BleakClient,BleakScanner
 import bleak.exc
 
 from bm2.bit_utils import decode_3bytes, decode_nibbles
@@ -54,6 +54,27 @@ class BM2Client:
         self._is_receiving_history = False
         self._history_data = b""
         self._future_history_readings: Optional[asyncio.Future[List[HistoryReading]]] = None
+
+    async def discover(self):
+        try:
+            devices = await BleakScanner.discover(timeout=10.0)
+            for d in devices:
+                if d.address.lower() == self._mac.lower():
+                    return True
+            return False
+        except bleak.exc.BleakError as e:
+            if "org.bluez.Error.InProgress" in str(e):
+                logger.warning(f"[{self._mac}] Discovery already in progress. Retrying soon.")
+                await asyncio.sleep(random.uniform(3, 6))  # Add jitter
+                return False
+            else:
+                logger.error(f"BleakError during discovery {e} : {self._mac}")
+                return False
+        except Exception as e:
+            logger.error(f"Discovery error {e} : {self._mac}")
+            if "No powered Bluetooth adapters found." in e.args[0]:
+                raise Exception("No powered Bluetooth adapters found.")
+            return False
 
     def start(self) -> None:
         if self._client is not None:
