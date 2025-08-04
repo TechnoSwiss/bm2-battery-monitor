@@ -80,11 +80,11 @@ class BM2Client:
                 return False
             else:
                 logger.error(f"BleakError during discovery {e} : {self._mac}")
+                if "No powered Bluetooth adapters found." in e.args[0]:
+                    raise Exception("No powered Bluetooth adapters found.")
                 return False
         except Exception as e:
             logger.error(f"Discovery error {e} : {self._mac}")
-            if "No powered Bluetooth adapters found." in e.args[0]:
-                raise Exception("No powered Bluetooth adapters found.")
             return False
 
     def start(self) -> None:
