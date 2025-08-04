@@ -55,6 +55,17 @@ class BM2Client:
         self._history_data = b""
         self._future_history_readings: Optional[asyncio.Future[List[HistoryReading]]] = None
 
+    @staticmethod
+    def _handle_task_exception(task: asyncio.Task):
+        try:
+            exception = task.exception()
+            if exception:
+                logging.warning(f"[Task Exception] {exception}")
+        except asyncio.CancelledError:
+            pass  # Normal case, no need to log
+        except Exception as e:
+            logging.error(f"[Task Callback Error] {e}")
+
     async def discover(self):
         try:
             devices = await BleakScanner.discover(timeout=10.0)
@@ -85,7 +96,15 @@ class BM2Client:
     def stop(self) -> None:
         self._stop = True
         if self._client is not None:
-            asyncio.create_task(self._client.disconnect())
+            async def disconnect_with_timeout():
+                try:
+                    await asyncio.wait_for(self._client.disconnect(), timeout=5)
+                except asyncio.TimeoutError:
+                    logger.warning(f"[{self._mac}] Timeout during disconnect.")
+                except Exception as e:
+                    logger.error(f"[{self._mac}] Error during disconnect: {e}")
+            task = asyncio.create_task(disconnect_with_timeout())
+            task.add_done_callback(self._handle_task_exception)
         if self._mainloop_task is not None:
             self._mainloop_task.cancel()
         self._client = None
