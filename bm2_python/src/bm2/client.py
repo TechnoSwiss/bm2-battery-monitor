@@ -13,7 +13,7 @@ from bleak import BleakClient
 import bleak.exc
 
 from bm2.bit_utils import decode_3bytes, decode_nibbles
-from bm2.encryption import encrypt, decrypt
+from bm2.encryption import encrypt, decrypt, decrypt_all_blocks
 
 logger = logging.getLogger("bm2_client")
 
