@@ -13,7 +13,7 @@ from bleak import BleakClient
 import bleak.exc
 
 from bm2.bit_utils import decode_3bytes, decode_nibbles
-from bm2.encryption import encrypt, decrypt, decrypt_all_blocks
+from bm2.encryption import encrypt, decrypt
 
 logger = logging.getLogger("bm2_client")
 
@@ -106,7 +106,7 @@ class BM2Client:
         while not self._stop:
             try:
                 async with BleakClient(self._mac) as client:
-                    logger.info(f"Connected")
+                    logger.info(f"Connected : {self._mac}")
 
                     await client.start_notify(UUID_KEY_READ, self._notification_handler)
                     self._client = client
@@ -120,9 +120,10 @@ class BM2Client:
 
                         await asyncio.sleep(1)
 
+                    logger.info(f"disconnected : {self._mac}")
             except bleak.exc.BleakError as e:
                 if "was not found" in e.args[0]:
-                    logger.info("Performing forceful device disconnection")
+                    logger.info(f"Performing forceful device disconnection : {self._mac}")
                     subprocess.run("bluetoothctl", input=f"disconnect {self._mac}".encode("ascii"), stdout=subprocess.DEVNULL)
                 elif "org.freedesktop.DBus.Error.NoReply" in e.args[0]:
                     pass
@@ -187,7 +188,7 @@ class BM2Client:
                 self._history_data += decrypted_data
 
         else:
-            logger.info(f"unknown packet: {binascii.hexlify(decrypted_data).decode('ascii')}")
+            logger.info(f"unknown packet: {binascii.hexlify(decrypted_data).decode('ascii')} : {self._mac}")
 
     def _fulfill_voltage_reading_future(self, result: Optional[float] = None, exception: Optional[Exception] = None) -> None:
         f = self._future_voltage_reading
